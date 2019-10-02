@@ -501,8 +501,20 @@ const transaction = {
     arr.push(this.floatToBytes(txData.weight, 8));
     // Timestamp
     arr.push(this.intToBytes(txData.timestamp, 4))
-    // Len parents (parents will be calculated in the backend)
-    arr.push(this.intToBytes(0, 1))
+
+    if (txData.parents) {
+      // Len parents
+      arr.push(this.intToBytes(txData.parents.length, 1))
+
+      // Each parent hash
+      for (const p of txData.parents) {
+        arr.push(util.buffer.hexToBuffer(p));
+      }
+
+    } else {
+      // Len parents (parents will be calculated in the backend)
+      arr.push(this.intToBytes(0, 1))
+    }
 
     // Add nonce in the end
     arr.push(this.intToBytes(txData.nonce, 4));
