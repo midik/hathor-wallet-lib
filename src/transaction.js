@@ -263,12 +263,12 @@ const transaction = {
     let arr = []
     // Tx version
     arr.push(this.intToBytes(DEFAULT_TX_VERSION, 2))
+    // Len tokens
+    arr.push(this.intToBytes(txData.tokens.length, 1))
     // Len inputs
     arr.push(this.intToBytes(txData.inputs.length, 1))
     // Len outputs
     arr.push(this.intToBytes(txData.outputs.length, 1))
-    // Len tokens
-    arr.push(this.intToBytes(txData.tokens.length, 1))
 
     for (const token of txData.tokens) {
       arr.push(new encoding.BufferReader(token).buf);
