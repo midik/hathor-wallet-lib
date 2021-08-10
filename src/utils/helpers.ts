@@ -327,14 +327,20 @@ const helpers = {
 
     const outputs: Output[] = [];
     for (const output of data.outputs) {
-      const address = new Address(output.address);
-      const p2pkh = new P2PKH(address, { timelock: output.timelock || null });
-      const p2pkhScript = p2pkh.createScript()
-      const outputObj = new Output(
-        output.value,
-        p2pkhScript,
-        { tokenData: output.tokenData }
-      );
+      let outputObj;
+      if (output.data) {
+        // Is NFT output
+        outputObj = this.createNFTOutput(output.data);
+      } else {
+        const address = new Address(output.address);
+        const p2pkh = new P2PKH(address, { timelock: output.timelock || null });
+        const p2pkhScript = p2pkh.createScript()
+        outputObj = new Output(
+          output.value,
+          p2pkhScript,
+          { tokenData: output.tokenData }
+        );
+      }
       outputs.push(outputObj);
     }
 
@@ -362,7 +368,20 @@ const helpers = {
     } else {
         throw new ParseError('We currently support only the Transaction and CreateTokenTransaction types. Other types will be supported in the future.');
     }
-  }
+  },
+
+
+  /**
+   * Create NFT output from data string
+   *
+   * @memberof Helpers
+   * @inner
+   */
+  createNFTOutput(data: string): Output {
+    const scriptData = new ScriptData(data);
+    // Value 1 and token HTR
+    return new Output(1, scriptData.createScript());
+  },
 }
 
 export default helpers;
