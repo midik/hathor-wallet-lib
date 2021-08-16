@@ -11,6 +11,7 @@ import buffer from 'buffer';
 import Long from 'long';
 import Transaction from '../models/transaction';
 import P2PKH from '../models/p2pkh';
+import ScriptData from '../models/script_data';
 import CreateTokenTransaction from '../models/create_token_transaction';
 import Input from '../models/input';
 import Output from '../models/output';

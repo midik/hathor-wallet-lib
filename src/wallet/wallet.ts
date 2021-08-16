@@ -608,7 +608,7 @@ class HathorWalletServiceWallet extends EventEmitter {
     const outputsObj: Output[] = [];
     if (isNFT) {
       // A token creation of an NFT has the first output as the data
-      outputsObj.push(helpers.createNFTOutput(newOptions.nftData));
+      outputsObj.push(helpers.createNFTOutput(newOptions.nftData!));
     }
     // a. Token amount
     const addressToUse = newOptions.address || this.getCurrentAddress({ markAsUsed: true }).address;
@@ -1035,7 +1035,7 @@ class HathorWalletServiceWallet extends EventEmitter {
     }, options);
     // Add nft data to the options
     newOptions['nftData'] = data;
-    const tx = await this.prepareCreateNewToken(name, symbol, amount, options);
+    const tx = await this.prepareCreateNewToken(name, symbol, amount, newOptions);
     return this.handleSendPreparedTransaction(tx);
   }
 }
