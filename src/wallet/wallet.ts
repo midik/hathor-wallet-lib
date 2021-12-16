@@ -59,7 +59,7 @@ enum walletState {
 
 class HathorWalletServiceWallet extends EventEmitter implements IHathorWallet {
   // String with 24 words separated by space
-  seed: string;
+  seed: string | null;
   // String with wallet passphrase
   passphrase: string;
   // Wallet id from the wallet service
@@ -84,8 +84,10 @@ class HathorWalletServiceWallet extends EventEmitter implements IHathorWallet {
   private indexToUse: number;
   // WalletService-ready connection class
   private conn: WalletServiceConnection | null;
+  // Callback for requesting the password from the client
+  private requestPassword: Function;
 
-  constructor(seed: string, network: Network, options = { passphrase: '' }) {
+  constructor(requestPassword: Function, seed: string, network: Network, options = { passphrase: '' }) {
     super();
 
     const { passphrase } = options;
@@ -93,6 +95,12 @@ class HathorWalletServiceWallet extends EventEmitter implements IHathorWallet {
     if (!seed) {
       throw Error('You must explicitly provide the seed.');
     }
+
+    if (!requestPassword) {
+      throw Error('You must explicitly provide the seed.');
+    }
+
+    this.requestPassword = requestPassword;
 
     this.conn = null;
 
@@ -130,8 +138,14 @@ class HathorWalletServiceWallet extends EventEmitter implements IHathorWallet {
    * @memberof HathorWalletServiceWallet
    * @inner
    */
-  async start() {
+  async start({ password, pinCode }) {
+    console.log(password, pinCode);
     this.setState(walletState.LOADING);
+
+    if (!this.seed) {
+      throw new Error('No seed on constructor');
+    }
+
     const xpub = walletUtils.getXPubKeyFromSeed(this.seed, {passphrase: this.passphrase, networkName: this.network.name});
     const xpubChangeDerivation = walletUtils.xpubDeriveChild(xpub, 0);
     const firstAddress = walletUtils.getAddressAtIndex(xpubChangeDerivation, 0, this.network.name);
@@ -158,6 +172,12 @@ class HathorWalletServiceWallet extends EventEmitter implements IHathorWallet {
 
     const data = await walletApi.createWallet(this, this.xpub, firstAddress);
     await handleCreate(data.status);
+
+    this.clearSensitiveData();
+  }
+
+  clearSensitiveData () {
+    this.seed = null;
   }
 
   async onNewTx(newTx: any) {
@@ -424,8 +444,8 @@ class HathorWalletServiceWallet extends EventEmitter implements IHathorWallet {
    * @memberof HathorWalletServiceWallet
    * @inner
    */
-  signMessage(timestamp: number): string {
-    const xpriv = walletUtils.getXPrivKeyFromSeed(this.seed, {passphrase: this.passphrase, networkName: this.network.name});
+  signMessage(seed, timestamp: number): string {
+    const xpriv = walletUtils.getXPrivKeyFromSeed(seed, {passphrase: this.passphrase, networkName: this.network.name});
     const derivedPrivKey = walletUtils.deriveXpriv(xpriv, '0\'');
     const address = derivedPrivKey.publicKey.toAddress(this.network.getNetwork()).toString();
 
@@ -460,7 +480,10 @@ class HathorWalletServiceWallet extends EventEmitter implements IHathorWallet {
     }
 
     if (!this.authToken || !validateJWTExpireDate(this.authToken)) {
-      const sign = this.signMessage(timestampNow);
+      const password = await this.requestPassword();
+      const seed = wallet.getWalletWords(password);
+
+      const sign = this.signMessage(seed, timestampNow);
       const data = await walletApi.createAuthToken(this, timestampNow, this.xpub!, sign);
       this.authToken = data.token;
     }

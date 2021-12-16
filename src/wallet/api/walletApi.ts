@@ -158,6 +158,7 @@ const walletApi = {
     if (response.status === 200 && response.data.success === true) {
       return response.data;
     } else {
+      console.log(response.status, response.data);
       throw new WalletRequestError('Error requesting auth token.');
     }
   },
